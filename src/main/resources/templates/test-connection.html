@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>CRUD Test - MySQL Connection</title>
+    <style>
+        body {
+            background: #1a1a1a;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .box {
+            width: 100%;
+            max-width: 500px;
+            background: #252525;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        h2 {
+            color: #2496ed;
+            margin-top: 0;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: #000;
+            color: white;
+        }
+
+        button {
+            padding: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .btn-add {
+            background: #2496ed;
+            color: white;
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .btn-edit {
+            background: #ffcc00;
+            color: black;
+            margin-right: 5px;
+        }
+
+        .btn-delete {
+            background: #ff4d4d;
+            color: white;
+        }
+
+        .btn-update {
+            background: #00ffcc;
+            color: black;
+            display: none;
+        }
+
+        .dot {
+            height: 10px;
+            width: 10px;
+            background-color: #00ffcc;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px #00ffcc;
+            animation: blink 1.5s infinite;
+        }
+
+        .btn-profile {
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 20px;
+            width: 80%;
+            justify-content: center;
+        }
+
+        .btn-profile:hover {
+            transform: translateX(-50%) scale(1.05);
+        }
+    </style>
+</head>
+
+<body>
+    <a href="/" class="btn-profile">
+        <span class="dot"></span>
+        PROFILE
+    </a>
+    <div class="box">
+        <h2>MySQL CRUD Test</h2>
+        <div class="input-group">
+            <input type="text" id="mainInput" placeholder="Nhập nội dung...">
+            <button class="btn-add" id="addBtn" onclick="addData()">Thêm</button>
+            <button class="btn-update" id="updateBtn">Cập nhật</button>
+        </div>
+
+        <div id="list"></div>
+    </div>
+
+    <script>
+        const API = "/api/connection";
+        let editingId = null;
+
+        async function load() {
+            const res = await fetch(`${API}/read-all`);
+            const data = await res.json();
+            const list = document.getElementById('list');
+            list.innerHTML = data.map(item => `
+            <div class="item">
+                <span>${item.details}</span>
+                <div>
+                    <button class="btn-edit" onclick="prepareEdit(${item.id}, '${item.details}')">Sửa</button>
+                    <button class="btn-delete" onclick="deleteData(${item.id})">Xóa</button>
+                </div>
+            </div>
+        `).join('');
+        }
+
+        async function addData() {
+            const val = document.getElementById('mainInput').value;
+            if (!val) return;
+            await fetch(`${API}/write?message=${encodeURIComponent(val)}`, { method: 'POST' });
+            document.getElementById('mainInput').value = '';
+            load();
+        }
+
+        function prepareEdit(id, msg) {
+            editingId = id;
+            document.getElementById('mainInput').value = msg;
+            document.getElementById('addBtn').style.display = 'none';
+            const upBtn = document.getElementById('updateBtn');
+            upBtn.style.display = 'block';
+            upBtn.onclick = () => updateData(id);
+        }
+
+        async function updateData(id) {
+            const newVal = document.getElementById('mainInput').value;
+            await fetch(`${API}/update/${id}?newMessage=${encodeURIComponent(newVal)}`, { method: 'PUT' });
+            cancelEdit();
+            load();
+        }
+
+        function cancelEdit() {
+            editingId = null;
+            document.getElementById('mainInput').value = '';
+            document.getElementById('addBtn').style.display = 'block';
+            document.getElementById('updateBtn').style.display = 'none';
+        }
+
+        async function deleteData(id) {
+            if (confirm("Xóa dòng này?")) {
+                await fetch(`${API}/delete/${id}`, { method: 'DELETE' });
+                load();
+            }
+        }
+
+        load(); // Chạy lần đầu
+    </script>
+
+</body>
+
+</html>
